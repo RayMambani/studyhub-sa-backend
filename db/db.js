@@ -70,6 +70,54 @@ CREATE TABLE IF NOT EXISTS notes (
   updated_at TEXT NOT NULL,
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
+
+-- Academic Calendar events (tests, assignments, personal reminders).
+CREATE TABLE IF NOT EXISTS events (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  event_date TEXT NOT NULL,     -- ISO date, e.g. 2026-08-14
+  event_time TEXT,              -- e.g. 09:00, optional
+  type TEXT NOT NULL DEFAULT 'personal', -- test | assignment | personal
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- Real notification feed backing the Notifications screen.
+-- Rows are inserted whenever something notification-worthy happens
+-- (resource upload, group message, upcoming event), then read back per user.
+CREATE TABLE IF NOT EXISTS notifications (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,        -- recipient
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  type TEXT NOT NULL DEFAULT 'general', -- resource | group | message | reminder
+  is_read INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
 `);
+
+// Lightweight migration: add columns to users/study_groups if not present yet
+// (keeps existing databases working without needing a full migration tool).
+const userColumns = db.prepare("PRAGMA table_info(users)").all().map(c => c.name);
+if (!userColumns.includes('privacy')) {
+  db.exec("ALTER TABLE users ADD COLUMN privacy TEXT NOT NULL DEFAULT 'public'");
+}
+if (!userColumns.includes('last_login_date')) {
+  db.exec("ALTER TABLE users ADD COLUMN last_login_date TEXT");
+}
+if (!userColumns.includes('login_streak')) {
+  db.exec("ALTER TABLE users ADD COLUMN login_streak INTEGER NOT NULL DEFAULT 0");
+}
+
+const groupColumns = db.prepare("PRAGMA table_info(study_groups)").all().map(c => c.name);
+if (!groupColumns.includes('seed_members')) {
+  // A baseline member count so existing demo groups look like real,
+  // established communities on top of whoever actually joins later.
+  db.exec("ALTER TABLE study_groups ADD COLUMN seed_members INTEGER NOT NULL DEFAULT 0");
+}
+
+require('./seed')(db);
 
 module.exports = db;

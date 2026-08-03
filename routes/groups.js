@@ -4,13 +4,15 @@ const { v4: uuid } = require('uuid');
 const db = require('../db/db');
 const { requireAuth } = require('../middleware/auth');
 const { sendPushToUser } = require('../notifications/push');
+const { notifyUsers } = require('../notifications/feed');
 
 const router = express.Router();
 
 // GET /api/groups
 router.get('/', requireAuth, (req, res) => {
   const rows = db.prepare(`
-    SELECT g.*, (SELECT COUNT(*) FROM group_members m WHERE m.group_id = g.id) AS member_count
+    SELECT g.*,
+      (SELECT COUNT(*) FROM group_members m WHERE m.group_id = g.id) + g.seed_members AS member_count
     FROM study_groups g ORDER BY g.created_at DESC
   `).all();
   res.json(rows);
@@ -35,6 +37,20 @@ router.post('/:id/join', requireAuth, (req, res) => {
   db.prepare(
     `INSERT OR IGNORE INTO group_members (group_id, user_id) VALUES (?, ?)`
   ).run(req.params.id, req.userId);
+
+  const group = db.prepare('SELECT name FROM study_groups WHERE id = ?').get(req.params.id);
+  const existingMembers = db.prepare(
+    `SELECT user_id FROM group_members WHERE group_id = ? AND user_id != ?`
+  ).all(req.params.id, req.userId);
+
+  if (group) {
+    notifyUsers(existingMembers.map(m => m.user_id), {
+      title: 'Study group invitation update',
+      body: `A new student joined ${group.name}`,
+      type: 'group',
+    });
+  }
+
   res.json({ joined: true });
 });
 
@@ -65,6 +81,13 @@ router.post('/:id/messages', requireAuth, (req, res) => {
       title: 'New message',
       body: content.slice(0, 80),
     }).catch(err => console.error('Push send failed:', err.message));
+  });
+
+  // Also log it in the in-app notification feed.
+  notifyUsers(members.map(m => m.user_id), {
+    title: 'New message',
+    body: content.slice(0, 80),
+    type: 'message',
   });
 
   res.status(201).json({ id });

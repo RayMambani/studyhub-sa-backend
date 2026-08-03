@@ -6,6 +6,7 @@ const { v4: uuid } = require('uuid');
 const db = require('../db/db');
 const { requireAuth } = require('../middleware/auth');
 const { sendPushToUser, sendPushToAll } = require('../notifications/push');
+const { notifyAllExcept } = require('../notifications/feed');
 
 const router = express.Router();
 
@@ -49,6 +50,14 @@ router.post('/', requireAuth, upload.single('file'), (req, res) => {
     body: `${title} was just shared${module ? ' in ' + module : ''}`,
     excludeUserId: req.userId,
   }).catch(err => console.error('Push send failed:', err.message));
+
+  // Also log it in the in-app notification feed so the Notifications screen shows it
+  // even for students who don't have push configured.
+  notifyAllExcept(req.userId, {
+    title: 'New resource uploaded',
+    body: `${title} was just shared${module ? ' in ' + module : ''}`,
+    type: 'resource',
+  });
 
   res.status(201).json({ id, fileUrl });
 });

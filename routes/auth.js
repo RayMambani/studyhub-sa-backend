@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const { v4: uuid } = require('uuid');
 const { OAuth2Client } = require('google-auth-library');
 const db = require('../db/db');
+const { updateLoginStreak } = require('../util/stats');
 
 const router = express.Router();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -53,6 +54,7 @@ router.post('/register', async (req, res) => {
      VALUES (?, ?, ?, ?, ?, 'password')`
   ).run(id, fullName, studentNumber || null, email, passwordHash);
 
+  updateLoginStreak(id);
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
   const token = issueToken(user);
   res.status(201).json({ token, user: publicUser(user) });
@@ -76,6 +78,7 @@ router.post('/login', async (req, res) => {
     return res.status(401).json({ error: 'Invalid email or password' });
   }
 
+  updateLoginStreak(user.id);
   const token = issueToken(user);
   res.json({ token, user: publicUser(user) });
 });
@@ -106,6 +109,7 @@ router.post('/google', async (req, res) => {
       user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
     }
 
+    updateLoginStreak(user.id);
     const token = issueToken(user);
     res.json({ token, user: publicUser(user) });
   } catch (err) {
