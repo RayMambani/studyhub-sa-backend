@@ -1,0 +1,44 @@
+ACCT101 — Financial Statements Quick-Reference Summary
+
+THE ACCOUNTING EQUATION
+Assets = Liabilities + Owner's Equity
+Every transaction keeps this equation in balance — that's the whole
+logic behind double-entry bookkeeping.
+
+INCOME STATEMENT (Statement of Profit or Loss)
+Shows performance over a period (e.g. "for the year ended...").
+
+    Revenue
+    - Cost of Sales
+    = Gross Profit
+    - Operating Expenses (rent, salaries, utilities, depreciation)
+    = Net Profit (or Net Loss)
+
+BALANCE SHEET (Statement of Financial Position)
+Shows financial position at a single point in time ("as at...").
+
+    Non-Current Assets   (property, equipment, long-term investments)
+  + Current Assets        (inventory, receivables, cash)
+  = Total Assets
+
+    Non-Current Liabilities (long-term loans)
+  + Current Liabilities     (payables, short-term loans)
+  = Total Liabilities
+
+    Total Assets - Total Liabilities = Owner's Equity
+
+CASH FLOW STATEMENT
+Splits cash movement into three categories:
+- Operating activities  — day-to-day trading cash flow
+- Investing activities  — buying/selling long-term assets
+- Financing activities  — loans, owner contributions, drawings
+
+KEY ADJUSTING ENTRIES TO REMEMBER
+- Accrued expenses: recognise the expense even if not yet paid.
+- Prepaid expenses: only recognise the portion "used up" this period.
+- Depreciation: spread an asset's cost over its useful life.
+- Bad debts: write off receivables unlikely to be collected.
+
+QUICK RATIOS WORTH KNOWING
+- Current ratio = Current Assets / Current Liabilities
+- Gross profit margin = Gross Profit / Revenue x 100

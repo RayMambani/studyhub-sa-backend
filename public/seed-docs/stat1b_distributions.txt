@@ -1,0 +1,48 @@
+STAT1B — Probability Distributions Cheat Sheet
+
+BINOMIAL DISTRIBUTION — X ~ B(n, p)
+Use when: a fixed number of independent trials, each with only two
+outcomes (success/failure), and a constant probability of success p.
+
+    P(X = k) = C(n, k) * p^k * (1-p)^(n-k)
+    Mean:     mu = n*p
+    Variance: sigma^2 = n*p*(1-p)
+
+Example: probability of getting exactly 3 heads in 5 coin flips.
+
+POISSON DISTRIBUTION — X ~ Po(lambda)
+Use when: counting the number of events occurring in a fixed interval
+of time or space, where events happen independently at a constant
+average rate lambda.
+
+    P(X = k) = (e^-lambda * lambda^k) / k!
+    Mean = Variance = lambda
+
+Example: number of customers arriving at a till in a 10-minute window.
+
+NORMAL DISTRIBUTION — X ~ N(mu, sigma^2)
+Use when: modelling continuous data that clusters symmetrically around
+a mean (heights, test scores, measurement errors).
+
+    z = (x - mu) / sigma
+
+Convert any normal variable to the standard normal (mu=0, sigma=1)
+using the z-score formula above, then look up the probability in the
+standard normal table.
+
+68-95-99.7 RULE (empirical rule for the Normal distribution)
+- ~68% of values fall within 1 standard deviation of the mean
+- ~95% of values fall within 2 standard deviations
+- ~99.7% of values fall within 3 standard deviations
+
+WHICH DISTRIBUTION DO I USE?
+- Counting successes out of a fixed number of trials -> Binomial
+- Counting occurrences over time/space at a constant rate -> Poisson
+- Continuous, bell-shaped, symmetric data -> Normal
+
+HYPOTHESIS TESTING QUICK STEPS
+1. State H0 (null) and H1 (alternative) hypotheses.
+2. Choose a significance level (usually alpha = 0.05).
+3. Calculate the test statistic.
+4. Compare to the critical value (or use the p-value).
+5. Reject or fail to reject H0, and state your conclusion in context.

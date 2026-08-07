@@ -1,0 +1,51 @@
+COMS2A — Week 4 Notes: Linked Lists
+
+WHAT IS A LINKED LIST?
+A linked list is a linear data structure where each element (called a
+"node") holds a value and a reference (pointer) to the next node. Unlike
+an array, the nodes are not stored in contiguous memory, which is why
+linked lists support fast insertion/deletion but slower random access.
+
+SINGLY LINKED LIST
+Each node points only to the next node. Traversal is one-directional.
+
+    struct Node {
+        int data;
+        Node* next;
+    };
+
+Common operations and their time complexity:
+- Insert at head:      O(1)
+- Insert at tail:      O(n) without a tail pointer, O(1) with one
+- Delete by value:     O(n) — must search first
+- Search:              O(n)
+
+DOUBLY LINKED LIST
+Each node has both a `next` and a `prev` pointer, allowing traversal in
+both directions and O(1) deletion once you already have a reference to
+the node (no need to search for its predecessor).
+
+USING A DUMMY HEAD NODE
+A common trick that simplifies edge cases (empty list, deleting the
+first element) is to keep a permanent "dummy" head node that never
+holds real data. Every real node comes after it, so insert/delete logic
+never needs a special case for "the list is empty" or "we're deleting
+the first node."
+
+CIRCULAR LINKED LIST
+The last node's `next` pointer points back to the head instead of to
+NULL/null. Useful for round-robin scheduling problems.
+
+WORKED EXAMPLE — DELETE BY VALUE (singly linked list)
+1. If the head node holds the value, move head to head.next and free
+   the old head.
+2. Otherwise, walk the list keeping a `prev` pointer one step behind
+   `curr`. When curr.data == target, set prev.next = curr.next.
+3. If you reach the end without finding the value, the list is
+   unchanged.
+
+COMMON EXAM MISTAKES TO AVOID
+- Forgetting to update the tail pointer after deleting the last node.
+- Losing the reference to the rest of the list when inserting (always
+  save `next` before you overwrite a pointer).
+- Off-by-one errors when counting list length during traversal.

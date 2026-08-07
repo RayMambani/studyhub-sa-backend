@@ -1,11 +1,31 @@
 // routes/users.js
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const multer = require('multer');
+const path = require('path');
+const { v4: uuid } = require('uuid');
 const db = require('../db/db');
 const { requireAuth } = require('../middleware/auth');
 const { computeUserStats } = require('../util/stats');
 
 const router = express.Router();
+
+const avatarStorage = multer.diskStorage({
+  destination: path.join(__dirname, '..', 'uploads'),
+  filename: (req, file, cb) => cb(null, `avatar-${req.userId}-${uuid()}${path.extname(file.originalname) || '.jpg'}`),
+});
+const uploadAvatar = multer({ storage: avatarStorage, limits: { fileSize: 8 * 1024 * 1024 } });
+
+// POST /api/users/avatar   (multipart/form-data: file)
+// Backs the "upload a profile picture" requirement — stores the image in
+// /uploads and saves its URL against the user's profile_image column.
+router.post('/avatar', requireAuth, uploadAvatar.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'file is required' });
+
+  const fileUrl = `/uploads/${req.file.filename}`;
+  db.prepare('UPDATE users SET profile_image = ? WHERE id = ?').run(fileUrl, req.userId);
+  res.status(201).json({ profileImage: fileUrl });
+});
 
 // GET /api/users/me
 router.get('/me', requireAuth, (req, res) => {

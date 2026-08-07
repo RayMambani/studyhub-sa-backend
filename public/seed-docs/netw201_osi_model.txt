@@ -1,0 +1,55 @@
+NETW201 — OSI Model Reference Sheet
+
+THE SEVEN LAYERS (top to bottom)
+Mnemonic: "All People Seem To Need Data Processing"
+
+7. APPLICATION
+   What the user interacts with. Protocols: HTTP, HTTPS, FTP, SMTP, DNS.
+   Example device/software: web browser, email client.
+
+6. PRESENTATION
+   Formats, encrypts, and compresses data for the application layer.
+   Handles things like SSL/TLS encryption, JPEG/ASCII encoding.
+
+5. SESSION
+   Establishes, manages, and terminates connections (sessions) between
+   applications on different devices.
+
+4. TRANSPORT
+   End-to-end delivery, error checking, and flow control.
+   Protocols: TCP (reliable, connection-oriented), UDP (fast,
+   connectionless — used for streaming/gaming where speed > reliability).
+
+3. NETWORK
+   Logical addressing (IP addresses) and routing between different
+   networks. This is where routers operate.
+   Protocols: IP, ICMP.
+
+2. DATA LINK
+   Physical addressing (MAC addresses), framing, and error detection on
+   the local network segment. This is where switches operate.
+   Sub-layers: LLC (Logical Link Control) and MAC (Media Access Control).
+
+1. PHYSICAL
+   The actual transmission of raw bits over a physical medium — cables,
+   radio waves, voltage levels, connectors.
+
+QUICK DEVICE-TO-LAYER MAPPING
+- Hub / cable:      Layer 1 (Physical)
+- Switch:           Layer 2 (Data Link)
+- Router:           Layer 3 (Network)
+- Firewall:         Layer 3-4 (Network/Transport), some inspect higher
+- Load balancer:    Layer 4-7 depending on type
+
+TCP vs UDP QUICK COMPARISON
+              TCP                    UDP
+Connection    Connection-oriented    Connectionless
+Reliability   Guaranteed delivery    No guarantee
+Speed         Slower (more overhead) Faster
+Use case      Web browsing, email    Video calls, live streaming, DNS
+
+COMMON EXAM TRAP
+Remember that data is "encapsulated" as it moves down the layers (each
+layer adds its own header) on the sending device, and "de-encapsulated"
+(headers stripped away) as it moves up the layers on the receiving
+device.

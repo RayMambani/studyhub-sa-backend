@@ -1,0 +1,35 @@
+NETW201 — Networking Fundamentals
+Course Outline & Assessment Plan (Semester 2, 2026)
+
+MODULE OVERVIEW
+Covers the fundamentals of computer networking, including the OSI and
+TCP/IP models, IP addressing and subnetting, routing basics, and common
+network protocols.
+
+WEEKLY SCHEDULE
+Week 1-2:  The OSI model and the TCP/IP model
+Week 3:    Physical layer and network media
+Week 4:    Data link layer, MAC addresses, switching
+Week 5-6:  Network layer, IP addressing, subnetting
+Week 7:    Routing fundamentals (static vs dynamic)
+Week 8:    Transport layer, TCP vs UDP
+Week 9:    Application layer protocols (HTTP, DNS, DHCP, FTP)
+Week 10:   Network security basics (firewalls, VPNs)
+Week 11:   Lab: configuring a small routed network
+Week 12:   Revision
+
+ASSESSMENT WEIGHTING
+- Lab reports (3):                  30%
+- Subnetting test (Week 6):         20%
+- Practical exam (Week 11 lab):     15%
+- Final theory exam:                35%
+
+KEY DATES
+- Subnetting test:   Week 6, Wednesday 09:00
+- Lab report 3 due:  Week 11, Friday 23:59
+
+SUBNETTING TIP
+Practice converting between decimal and binary until it's automatic —
+almost every subnetting question comes down to correctly identifying
+the network address, broadcast address, and usable host range from a
+given IP address and subnet mask.

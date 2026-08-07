@@ -1,0 +1,48 @@
+LAWS102 — Contract Law Case Digest: Offer, Acceptance & Breach
+
+REQUIREMENTS FOR A VALID CONTRACT
+1. Consensus (offer + acceptance, genuine meeting of minds)
+2. Capacity (both parties must be legally able to contract)
+3. Formalities (some contracts must be in writing, e.g. sale of land)
+4. Legality (the purpose of the contract must be lawful)
+5. Possibility of performance
+6. Certainty of terms
+
+OFFER vs INVITATION TO TREAT
+An offer is a definite proposal capable of being accepted as-is. Goods
+displayed in a shop window, price lists, and advertisements are
+generally treated as an "invitation to treat" — the customer makes the
+offer at the till, which the shop can accept or decline.
+
+ACCEPTANCE
+Must be a clear, unqualified "yes" to the exact terms offered. Adding
+new conditions is legally a counter-offer, not an acceptance — it kills
+the original offer.
+
+VOID vs VOIDABLE CONTRACTS
+- Void: the contract never had legal effect at all (e.g. an illegal
+  purpose, or one party lacked capacity entirely).
+- Voidable: the contract is valid but one party may choose to cancel it
+  (e.g. contracts entered under misrepresentation or duress) — until
+  cancelled, it remains binding.
+
+MISREPRESENTATION
+A false statement of fact that induces the other party to contract.
+Categorised as:
+- Innocent — made honestly believing it to be true
+- Negligent — made without reasonable grounds for believing it true
+- Fraudulent — made knowingly false, or recklessly, to deceive
+
+REMEDIES FOR BREACH OF CONTRACT
+- Specific performance — court orders the breaching party to actually
+  perform their obligation.
+- Cancellation — the innocent party may cancel and be released from
+  further obligations (only for material/serious breaches).
+- Damages — monetary compensation to put the innocent party in the
+  position they would have been in had the contract been performed.
+
+REVISION TIP
+When answering a problem question, always work through the six
+requirements above in order before discussing remedies — most marks are
+lost by jumping straight to "breach" without first confirming a valid
+contract existed.

@@ -96,6 +96,15 @@ CREATE TABLE IF NOT EXISTS notifications (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
+-- Comments left on a resource in the Resource Library.
+CREATE TABLE IF NOT EXISTS comments (
+  id TEXT PRIMARY KEY,
+  resource_id TEXT NOT NULL,
+  author_name TEXT NOT NULL,
+  content TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY (resource_id) REFERENCES resources(id)
+);
 `);
 
 // Lightweight migration: add columns to users/study_groups if not present yet

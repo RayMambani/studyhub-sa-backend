@@ -1,0 +1,33 @@
+STAT1B — Introductory Statistics
+Course Outline & Assessment Plan (Semester 2, 2026)
+
+MODULE OVERVIEW
+Covers descriptive statistics, probability theory, common probability
+distributions, and an introduction to hypothesis testing.
+
+WEEKLY SCHEDULE
+Week 1:    Descriptive statistics (mean, median, variance, std dev)
+Week 2-3:  Probability rules, conditional probability
+Week 4:    Discrete random variables
+Week 5:    The Binomial distribution
+Week 6:    The Poisson distribution
+Week 7:    Continuous random variables
+Week 8-9:  The Normal distribution and z-scores
+Week 10:   Sampling distributions and the Central Limit Theorem
+Week 11:   Introduction to hypothesis testing
+Week 12:   Revision
+
+ASSESSMENT WEIGHTING
+- Tutorial assignments (4):         20%
+- Test 1 — probability & discrete distributions:  20%
+- Test 2 — continuous distributions & testing:    20%
+- Final exam:                       40%
+
+KEY DATES
+- Test 1:  Week 6, Wednesday 09:00
+- Test 2:  Week 10, Wednesday 09:00
+
+CALCULATOR NOTE
+A non-programmable scientific calculator is required for all tests and
+the exam. Statistical tables will be provided — you do not need to
+memorise distribution tables, but you do need to know how to read them.

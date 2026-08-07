@@ -1,21 +1,19 @@
 // db/seed.js
 // Populates the database with realistic starter content the first time it
 // runs (checked via a marker row so it never duplicates on restart/redeploy):
-// established study groups with real member counts, downloadable resources
-// per module, and an existing conversation in each group's chat.
+// established study groups with real member counts, real downloadable
+// resources per module (served from a committed /public/seed-docs folder so
+// they survive Render restarts — unlike runtime-written files in /uploads,
+// which are wiped whenever a free-tier instance restarts), an existing
+// conversation in each group's chat, and module-specific resource comments.
 const { v4: uuid } = require('uuid');
-const fs = require('fs');
-const path = require('path');
 const bcrypt = require('bcryptjs');
 
-const SEED_MARKER_ID = 'seed-v1';
+const SEED_MARKER_ID = 'seed-v2';
 
 module.exports = function seed(db) {
   const already = db.prepare('SELECT id FROM users WHERE id = ?').get(SEED_MARKER_ID);
   if (already) return; // already seeded, never re-run
-
-  const uploadsDir = path.join(__dirname, '..', 'uploads');
-  if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
   // A single system account that "authors" the starter content — real row
   // in the users table so foreign keys make sense, but it can't log in
@@ -34,6 +32,7 @@ module.exports = function seed(db) {
     { name: 'Networks & Systems', module: 'NETW201', desc: 'OSI model, routing, and lab report help.', members: 99 },
   ];
 
+  // file names match the real, committed files in backend/public/seed-docs/
   const resourcesByModule = {
     COMS2A: [
       { title: 'Course Outline & Assessment Plan', file: 'coms2a_course_outline.txt', desc: 'Semester schedule, assessment weighting, and key dates.' },
@@ -95,6 +94,31 @@ module.exports = function seed(db) {
     ],
   };
 
+  // Different commenter names and remarks per module, so Resource Details
+  // doesn't show the same two names everywhere.
+  const commentsByModule = {
+    COMS2A: [
+      ['Karabo M.', 'This cleared up the dummy head node trick for me, thank you!'],
+      ['Naledi P.', 'Really clean explanation of singly vs doubly linked lists.'],
+    ],
+    ACCT101: [
+      ['Ayanda K.', 'Saved me before the mock test, the ratio section is gold.'],
+      ['Tumi R.', 'Wish I had this before attempting the adjusting entries.'],
+    ],
+    LAWS102: [
+      ['Sipho D.', 'The void vs voidable explanation finally made it click.'],
+      ['Aisha K.', 'Great case summaries, exactly what I needed for the class test.'],
+    ],
+    STAT1B: [
+      ['Lerato N.', 'The distribution comparison table is so useful for revision.'],
+      ['Johan V.', 'Clear breakdown of when to use Binomial vs Poisson.'],
+    ],
+    NETW201: [
+      ['Thandeka M.', 'Finally understand which devices operate at which layer.'],
+      ['Michael O.', 'The TCP vs UDP table is a great quick-reference.'],
+    ],
+  };
+
   const insertGroup = db.prepare(`
     INSERT INTO study_groups (id, name, module, description, created_by, seed_members)
     VALUES (?, ?, ?, ?, ?, ?)
@@ -107,23 +131,25 @@ module.exports = function seed(db) {
     INSERT INTO messages (id, group_id, sender_id, content, sent_at)
     VALUES (?, ?, ?, ?, datetime('now', ?))
   `);
+  const insertComment = db.prepare(`
+    INSERT INTO comments (id, resource_id, author_name, content, created_at)
+    VALUES (?, ?, ?, ?, datetime('now', ?))
+  `);
 
   groups.forEach(g => {
     const groupId = uuid();
     insertGroup.run(groupId, g.name, g.module, g.desc, SEED_MARKER_ID, g.members);
 
-    // Downloadable resources for this module — real small text files written
-    // to /uploads so the Resource Library's download button has something
-    // genuine to serve, not just a database row with a dead link.
+    // Downloadable resources — served from the permanent /seed-docs static
+    // route (backend/public/seed-docs), not the ephemeral /uploads folder,
+    // so these links keep working across every redeploy.
     (resourcesByModule[g.module] || []).forEach(r => {
-      const filePath = path.join(uploadsDir, r.file);
-      if (!fs.existsSync(filePath)) {
-        fs.writeFileSync(
-          filePath,
-          `${r.title}\nModule: ${g.module}\n\n${r.desc}\n\n(Sample starter document provided by StudyHub SA.)`
-        );
-      }
-      insertResource.run(uuid(), r.title, r.desc, g.module, `/uploads/${r.file}`, 'TXT', SEED_MARKER_ID);
+      const resourceId = uuid();
+      insertResource.run(resourceId, r.title, r.desc, g.module, `/seed-docs/${r.file}`, 'TXT', SEED_MARKER_ID);
+
+      (commentsByModule[g.module] || []).forEach(([name, text], i) => {
+        insertComment.run(uuid(), resourceId, name, text, `-${(i + 1) * 40} minutes`);
+      });
     });
 
     // A short existing conversation so Group Chat never opens empty.

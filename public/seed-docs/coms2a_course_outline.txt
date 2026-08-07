@@ -1,0 +1,36 @@
+COMS2A — Data Structures and Algorithms
+Course Outline & Assessment Plan (Semester 2, 2026)
+
+MODULE OVERVIEW
+This module covers the fundamental data structures used in software
+development — arrays, linked lists, stacks, queues, trees, and hash
+tables — along with the algorithms that operate on them (searching,
+sorting, and basic complexity analysis using Big-O notation).
+
+WEEKLY SCHEDULE
+Week 1-2:  Arrays, Big-O notation, time/space complexity
+Week 3-4:  Linked lists (singly, doubly, circular)
+Week 5:    Stacks and queues
+Week 6:    Recursion and recursive data structures
+Week 7-8:  Binary trees and binary search trees
+Week 9:    Hash tables and collision handling
+Week 10:   Sorting algorithms (bubble, insertion, merge, quick)
+Week 11:   Graph basics (BFS/DFS)
+Week 12:   Revision
+
+ASSESSMENT WEIGHTING
+- Practical assignments (3):        30%
+- Class test (Week 6):              15%
+- Mid-semester test (Week 9):       20%
+- Final exam:                       35%
+
+KEY DATES
+- Assignment 1 due:   Week 3, Friday 23:59
+- Assignment 2 due:   Week 7, Friday 23:59
+- Assignment 3 due:   Week 11, Friday 23:59
+- Class test:         Week 6, in-lecture
+- Mid-semester test:  Week 9, Wednesday 09:00
+
+RECOMMENDED TEXTBOOK
+"Data Structures and Algorithm Analysis" (any recent edition) —
+chapters on linked lists and trees are directly examinable.
