@@ -66,6 +66,23 @@ asked why the first login feels slow.
 3. The *same* web client ID also goes into the Android app's
    `strings.xml` as `default_web_client_id` (see android README).
 
+## AI Study Assist (Gemini) setup
+
+The Summarize / Ask / Recommendations features work out of the box with a
+local rule-based fallback — no setup required. To upgrade them to a real
+Gemini-powered AI:
+
+1. Get a free key at https://aistudio.google.com/apikey (no credit card
+   needed for the free tier).
+2. Add it to `.env` locally as `GEMINI_API_KEY=...` for local testing.
+3. Add the same variable on Render: Dashboard → your service → Environment
+   → Add Environment Variable → key `GEMINI_API_KEY`, value your key →
+   Save Changes (triggers an automatic redeploy).
+
+If the key is missing, invalid, or the Gemini API is temporarily
+unreachable, every AI endpoint automatically falls back to the built-in
+local logic — the feature never just breaks for the student.
+
 ## Push notifications setup
 
 1. Firebase Console → Project Settings → Service Accounts → **Generate new

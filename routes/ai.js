@@ -2,18 +2,10 @@
 //
 // Backs the "AI Study Assist" feature (summaries, Q&A, recommendations).
 //
-// IMPORTANT — read this before assuming it's a real LLM: this is a
-// heuristic, rule-based implementation with NO external API key required,
-// so it works out of the box. It genuinely processes real input (extractive
-// summarisation, keyword-matched answers, activity-based recommendations)
-// rather than returning random text, but it is not a large language model.
-//
-// To upgrade this to a real LLM (e.g. OpenAI, Anthropic, Gemini):
-//   1. Add an API key to .env (e.g. OPENAI_API_KEY=...)
-//   2. Replace the body of each function below with a fetch() call to that
-//      provider's chat/completions endpoint, passing req.body.text/question.
-// Nothing on the Android side needs to change — it just calls these same
-// three endpoints and displays whatever text comes back.
+// Uses Google's Gemini API when GEMINI_API_KEY is set in the environment,
+// and automatically falls back to a local rule-based implementation if the
+// key is missing OR the API call fails for any reason (network issue, rate
+// limit, invalid key) — so the feature never just breaks for the student.
 
 const express = require('express');
 const db = require('../db/db');
@@ -22,8 +14,39 @@ const { computeUserStats } = require('../util/stats');
 
 const router = express.Router();
 
-// A small local knowledge base drawn from the seeded course content, used
-// for keyword-matched answers when no better match is found.
+const GEMINI_MODEL = 'gemini-1.5-flash';
+const GEMINI_URL = (key) =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`;
+
+async function callGemini(prompt) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return null;
+
+  try {
+    const response = await fetch(GEMINI_URL(apiKey), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('[ai] Gemini request failed:', response.status, await response.text());
+      return null;
+    }
+
+    const data = await response.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    return text ? text.trim() : null;
+  } catch (err) {
+    console.error('[ai] Gemini call threw:', err.message);
+    return null;
+  }
+}
+
+// --- Local fallback logic (used when Gemini is unavailable) ---
+
 const KNOWLEDGE_BASE = [
   { keywords: ['linked list', 'node', 'pointer'], answer: 'A linked list stores elements as nodes, where each node holds a value and a pointer to the next node. A dummy head node is a common trick that removes the need for special-case handling of an empty list or deleting the first element.' },
   { keywords: ['binomial', 'poisson', 'normal distribution', 'distribution'], answer: 'Use Binomial for a fixed number of trials with two outcomes, Poisson for counting events over time at a constant rate, and Normal for continuous, symmetric, bell-shaped data. Convert to a z-score (z = (x - mean) / std dev) to use the standard normal table.' },
@@ -33,17 +56,14 @@ const KNOWLEDGE_BASE = [
   { keywords: ['study tip', 'how to study', 'exam prep', 'revise'], answer: 'Active recall (testing yourself without notes) and spaced repetition (revisiting material over several days rather than one long session) are consistently the most effective study techniques — more effective than re-reading notes.' },
 ];
 
-function pickAnswer(question) {
+function localAnswer(question) {
   const q = question.toLowerCase();
   const match = KNOWLEDGE_BASE.find(entry => entry.keywords.some(k => q.includes(k)));
   if (match) return match.answer;
   return "I don't have a specific answer for that yet — try checking the Resource Library for your module's notes, or rephrase your question using a term from your course material (e.g. \"linked list\", \"OSI model\", \"binomial distribution\").";
 }
 
-// Extractive summariser: splits into sentences, scores each by length and
-// position, and returns the highest-scoring ones in their original order —
-// a real (if simple) summarisation algorithm, not a canned response.
-function summarise(text, maxSentences = 3) {
+function localSummarise(text, maxSentences = 3) {
   const sentences = text
     .replace(/\s+/g, ' ')
     .split(/(?<=[.!?])\s+/)
@@ -66,26 +86,36 @@ function summarise(text, maxSentences = 3) {
     .join(' ');
 }
 
+// --- Routes ---
+
 // POST /api/ai/summarize   Body: { text }
-router.post('/summarize', requireAuth, (req, res) => {
+router.post('/summarize', requireAuth, async (req, res) => {
   const { text } = req.body;
   if (!text || text.trim().length < 40) {
     return res.status(400).json({ error: 'Paste at least a paragraph of text to summarise.' });
   }
-  res.json({ summary: summarise(text) });
+
+  const geminiSummary = await callGemini(
+    `Summarise the following study notes in 3-4 concise sentences, suitable for a student revising before a test:\n\n${text}`
+  );
+  res.json({ summary: geminiSummary || localSummarise(text) });
 });
 
 // POST /api/ai/ask   Body: { question }
-router.post('/ask', requireAuth, (req, res) => {
+router.post('/ask', requireAuth, async (req, res) => {
   const { question } = req.body;
   if (!question || !question.trim()) {
     return res.status(400).json({ error: 'question is required' });
   }
-  res.json({ answer: pickAnswer(question) });
+
+  const geminiAnswer = await callGemini(
+    `You are a helpful study assistant for a South African university student. Answer this academic question clearly and concisely, in 2-4 sentences:\n\n${question}`
+  );
+  res.json({ answer: geminiAnswer || localAnswer(question) });
 });
 
 // GET /api/ai/recommendations — based on the student's real activity
-router.get('/recommendations', requireAuth, (req, res) => {
+router.get('/recommendations', requireAuth, async (req, res) => {
   const stats = computeUserStats(req.userId);
   const groups = db.prepare(`
     SELECT g.module FROM group_members gm
@@ -93,24 +123,29 @@ router.get('/recommendations', requireAuth, (req, res) => {
     WHERE gm.user_id = ?
   `).all(req.userId).map(r => r.module);
 
-  const recommendations = [];
+  const geminiPrompt = `A student is using a study app. They are in these modules: ${groups.length ? [...new Set(groups)].join(', ') : 'none yet'}. They have uploaded ${stats.uploadsCount} resources, joined ${stats.groupsCount} groups, and have a ${stats.streak}-day login streak. Give exactly 3 short, specific, encouraging study recommendations as a plain list, one per line, no numbering or markdown.`;
 
+  const geminiText = await callGemini(geminiPrompt);
+  if (geminiText) {
+    const lines = geminiText.split('\n').map(l => l.replace(/^[-*\d.]+\s*/, '').trim()).filter(Boolean);
+    if (lines.length > 0) return res.json({ recommendations: lines.slice(0, 4) });
+  }
+
+  // Local fallback
+  const recommendations = [];
   if (groups.length === 0) {
     recommendations.push('Join a study group for your modules — students in active groups upload more resources and stay on top of deadlines.');
   } else {
     recommendations.push(`You're active in ${[...new Set(groups)].join(', ')} — check the Resource Library for the latest notes in those modules.`);
   }
-
   if (stats.uploadsCount === 0) {
     recommendations.push('Try uploading a resource — summarising your own notes is one of the most effective ways to revise, and it earns the Academic Contributor badge.');
   }
-
   if (stats.streak < 3) {
     recommendations.push('Log in daily to build your study streak — consistent short sessions beat occasional long ones for retention.');
   } else {
     recommendations.push(`Great consistency — you're on a ${stats.streak}-day streak. Keep it going!`);
   }
-
   recommendations.push('Use active recall: close your notes and try to explain a topic out loud before checking if you got it right.');
 
   res.json({ recommendations });
