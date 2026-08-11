@@ -14,35 +14,41 @@ const { computeUserStats } = require('../util/stats');
 
 const router = express.Router();
 
-const GEMINI_MODEL = 'gemini-2.0-flash';
-const GEMINI_URL = (key) =>
-  `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`;
+// Google periodically retires older Gemini model names — trying a short list
+// in order means one deprecation doesn't break the feature; it just moves to
+// the next candidate. Update this list if all of them ever start failing.
+const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-flash-latest'];
+const GEMINI_URL = (model, key) =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
 
 async function callGemini(prompt) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
 
-  try {
-    const response = await fetch(GEMINI_URL(apiKey), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-      }),
-    });
+  for (const model of GEMINI_MODELS) {
+    try {
+      const response = await fetch(GEMINI_URL(model, apiKey), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+        }),
+      });
 
-    if (!response.ok) {
-      console.error('[ai] Gemini request failed:', response.status, await response.text());
-      return null;
+      if (!response.ok) {
+        console.error(`[ai] Gemini request failed for model ${model}:`, response.status, await response.text());
+        continue; // try the next model name
+      }
+
+      const data = await response.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text) return text.trim();
+    } catch (err) {
+      console.error(`[ai] Gemini call threw for model ${model}:`, err.message);
     }
-
-    const data = await response.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    return text ? text.trim() : null;
-  } catch (err) {
-    console.error('[ai] Gemini call threw:', err.message);
-    return null;
   }
+
+  return null; // every model attempt failed — caller falls back to local logic
 }
 
 // --- Local fallback logic (used when Gemini is unavailable) ---
