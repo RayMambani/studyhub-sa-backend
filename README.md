@@ -35,7 +35,7 @@ The API starts on `http://localhost:4000`. Test it:
 ```bash
 curl -X POST http://localhost:4000/api/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"fullName":"Thandiwe Nkosi","studentNumber":"22045871","email":"thandiwe@example.com","password":"password123"}'
+  -d '{"fullName":"Makhadzi Mambani","studentNumber":"22045871","email":"makhadzi@example.com","password":"password123"}'
 ```
 
 ## Deploying so it "exists on the internet"
