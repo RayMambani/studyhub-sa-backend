@@ -6,6 +6,7 @@ const { v4: uuid } = require('uuid');
 const { OAuth2Client } = require('google-auth-library');
 const db = require('../db/db');
 const { updateLoginStreak } = require('../util/stats');
+const { isStrongPassword, PASSWORD_REQUIREMENTS_MESSAGE } = require('../util/password');
 
 const router = express.Router();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -31,7 +32,12 @@ function publicUser(u) {
 // POST /api/auth/register
 // Body: { fullName, studentNumber, email, password }
 router.post('/register', async (req, res) => {
-  const { fullName, studentNumber, email, password } = req.body;
+  const { fullName, studentNumber, password } = req.body;
+  // Normalise email casing/whitespace so "Test@Example.com" and
+  // "test@example.com" are always treated as the same account — this was
+  // the cause of "invalid email or password" on a second login with the
+  // exact same-looking credentials.
+  const email = req.body.email ? req.body.email.trim().toLowerCase() : req.body.email;
 
   if (!fullName || !email || !password) {
     return res.status(400).json({ error: 'fullName, email and password are required' });
@@ -39,8 +45,11 @@ router.post('/register', async (req, res) => {
   if (password.length < 8) {
     return res.status(400).json({ error: 'Password must be at least 8 characters' });
   }
+  if (!isStrongPassword(password)) {
+    return res.status(400).json({ error: PASSWORD_REQUIREMENTS_MESSAGE });
+  }
 
-  const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+  const existing = db.prepare('SELECT id FROM users WHERE LOWER(email) = ?').get(email);
   if (existing) {
     return res.status(409).json({ error: 'An account with this email already exists' });
   }
@@ -63,12 +72,13 @@ router.post('/register', async (req, res) => {
 // POST /api/auth/login
 // Body: { email, password }
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+  const { password } = req.body;
+  const email = req.body.email ? req.body.email.trim().toLowerCase() : req.body.email;
   if (!email || !password) {
     return res.status(400).json({ error: 'email and password are required' });
   }
 
-  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+  const user = db.prepare('SELECT * FROM users WHERE LOWER(email) = ?').get(email);
   if (!user || !user.password_hash) {
     return res.status(401).json({ error: 'Invalid email or password' });
   }
@@ -95,11 +105,11 @@ router.post('/google', async (req, res) => {
       audience: process.env.GOOGLE_CLIENT_ID,
     });
     const payload = ticket.getPayload();
-    const email = payload.email;
+    const email = payload.email.trim().toLowerCase();
     const fullName = payload.name || email.split('@')[0];
     const picture = payload.picture;
 
-    let user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+    let user = db.prepare('SELECT * FROM users WHERE LOWER(email) = ?').get(email);
     if (!user) {
       const id = uuid();
       db.prepare(

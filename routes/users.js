@@ -7,6 +7,7 @@ const { v4: uuid } = require('uuid');
 const db = require('../db/db');
 const { requireAuth } = require('../middleware/auth');
 const { computeUserStats } = require('../util/stats');
+const { isStrongPassword, PASSWORD_REQUIREMENTS_MESSAGE } = require('../util/password');
 
 const router = express.Router();
 
@@ -84,6 +85,9 @@ router.post('/change-password', requireAuth, async (req, res) => {
   const { currentPassword, newPassword } = req.body;
   if (!newPassword || newPassword.length < 8) {
     return res.status(400).json({ error: 'newPassword must be at least 8 characters' });
+  }
+  if (!isStrongPassword(newPassword)) {
+    return res.status(400).json({ error: PASSWORD_REQUIREMENTS_MESSAGE });
   }
 
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId);
