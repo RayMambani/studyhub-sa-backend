@@ -56,9 +56,13 @@ router.post('/:id/join', requireAuth, (req, res) => {
 
 // GET /api/groups/:id/messages
 router.get('/:id/messages', requireAuth, (req, res) => {
-  const rows = db.prepare(
-    `SELECT * FROM messages WHERE group_id = ? ORDER BY sent_at ASC LIMIT 200`
-  ).all(req.params.id);
+  const rows = db.prepare(`
+    SELECT m.*, u.full_name AS sender_name
+    FROM messages m
+    JOIN users u ON u.id = m.sender_id
+    WHERE m.group_id = ?
+    ORDER BY m.sent_at ASC LIMIT 200
+  `).all(req.params.id);
   res.json(rows);
 });
 
