@@ -38,4 +38,8 @@ app.use('/api/ai', aiRoutes);
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`StudyHub SA API listening on port ${PORT}`));
+if (require.main === module) {
+  app.listen(PORT, () => console.log(`StudyHub SA API listening on port ${PORT}`));
+}
+
+module.exports = app;
