@@ -17,7 +17,7 @@ const router = express.Router();
 // Google periodically retires older Gemini model names — trying a short list
 // in order means one deprecation doesn't break the feature; it just moves to
 // the next candidate. Update this list if all of them ever start failing.
-const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-flash-latest'];
+const GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash'];
 const GEMINI_URL = (model, key) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
 
