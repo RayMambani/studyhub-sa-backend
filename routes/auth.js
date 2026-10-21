@@ -34,7 +34,7 @@ function publicUser(u) {
 router.post('/register', async (req, res) => {
   const { fullName, studentNumber, password } = req.body;
   // Normalise email casing/whitespace so "Test@Example.com" and
-  // "test@example.com" are always treated as the same account — this was
+  // "test@example.com" are always treated as the same account â€” this was
   // the cause of "invalid email or password" on a second login with the
   // exact same-looking credentials.
   const email = req.body.email ? req.body.email.trim().toLowerCase() : req.body.email;
@@ -102,7 +102,7 @@ router.post('/google', async (req, res) => {
   try {
     const ticket = await googleClient.verifyIdToken({
       idToken,
-      audience: process.env.GOOGLE_CLIENT_ID,
+      audience: [(process.env.GOOGLE_CLIENT_ID || '').trim(), '639761337599-3a1ecmcp3ghnddr0be8j667v150bsvh7.apps.googleusercontent.com', '639761337599-71j4ejkpgvf3psv5i8a7gbfbkctvnbnd.apps.googleusercontent.com'].filter(Boolean),
     });
     const payload = ticket.getPayload();
     const email = payload.email.trim().toLowerCase();
@@ -124,7 +124,7 @@ router.post('/google', async (req, res) => {
     res.json({ token, user: publicUser(user) });
   } catch (err) {
     console.error('Google token verification failed:', err.message);
-    res.status(401).json({ error: 'Invalid Google ID token' });
+    res.status(401).json({ error: 'Invalid Google ID token: ' + err.message });
   }
 });
 
