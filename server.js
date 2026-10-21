@@ -1,4 +1,4 @@
-﻿// server.js
+// server.js
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -34,6 +34,7 @@ app.use('/api/events', eventRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/resources', commentRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/', require('./routes/legal'));
 app.use('/api/debug', require('./routes/debug'));
 
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));
