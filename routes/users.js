@@ -1,24 +1,19 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const multer = require('multer');
-const path = require('path');
-const { v4: uuid } = require('uuid');
 const db = require('../db/db');
 const { requireAuth } = require('../middleware/auth');
 const { computeUserStats } = require('../util/stats');
 const { isStrongPassword, PASSWORD_REQUIREMENTS_MESSAGE } = require('../util/password');
+const { saveUpload } = require('../util/storage');
 
 const router = express.Router();
 
-const avatarStorage = multer.diskStorage({
-  destination: path.join(__dirname, '..', 'uploads'),
-  filename: (req, file, cb) => cb(null, `avatar-${req.userId}-${uuid()}${path.extname(file.originalname) || '.jpg'}`),
-});
-const uploadAvatar = multer({ storage: avatarStorage, limits: { fileSize: 8 * 1024 * 1024 } });
+const uploadAvatar = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
 
 router.post('/avatar', requireAuth, uploadAvatar.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'file is required' });
-  const fileUrl = `/uploads/${req.file.filename}`;
+  const fileUrl = await saveUpload(req.file, `avatar-${req.userId}-`);
   await db.run('UPDATE users SET profile_image = ? WHERE id = ?', [fileUrl, req.userId]);
   res.status(201).json({ profileImage: fileUrl });
 });

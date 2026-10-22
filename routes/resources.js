@@ -6,14 +6,12 @@ const db = require('../db/db');
 const { requireAuth } = require('../middleware/auth');
 const { sendPushToAll } = require('../notifications/push');
 const { notifyAllExcept } = require('../notifications/feed');
+const { saveUpload } = require('../util/storage');
 
 const router = express.Router();
 
-const storage = multer.diskStorage({
-  destination: path.join(__dirname, '..', 'uploads'),
-  filename: (req, file, cb) => cb(null, `${uuid()}-${file.originalname}`),
-});
-const upload = multer({ storage, limits: { fileSize: 25 * 1024 * 1024 } });
+// Held in memory, then handed to Cloudinary (free plan limit is 10 MB per file).
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 router.get('/', requireAuth, async (req, res) => {
   const { module, search } = req.query;
@@ -32,7 +30,7 @@ router.post('/', requireAuth, upload.single('file'), async (req, res) => {
   }
 
   const id = uuid();
-  const fileUrl = `/uploads/${req.file.filename}`;
+  const fileUrl = await saveUpload(req.file);
   const fileType = path.extname(req.file.originalname).replace('.', '').toUpperCase();
 
   await db.run(
