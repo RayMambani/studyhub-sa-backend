@@ -1,4 +1,4 @@
-﻿// routes/ai.js
+// routes/ai.js
 //
 // Backs the "AI Study Assist" feature (summaries, Q&A, recommendations).
 //
@@ -162,12 +162,8 @@ router.post('/ask', requireAuth, async (req, res) => {
 
 // GET /api/ai/recommendations -- based on the student's real activity
 router.get('/recommendations', requireAuth, async (req, res) => {
-  const stats = computeUserStats(req.userId);
-  const groups = db.prepare(`
-    SELECT g.module FROM group_members gm
-    JOIN study_groups g ON g.id = gm.group_id
-    WHERE gm.user_id = ?
-  `).all(req.userId).map(r => r.module);
+  const stats = await computeUserStats(req.userId);
+  const groups = (await db.all('SELECT g.module FROM group_members gm JOIN study_groups g ON g.id = gm.group_id WHERE gm.user_id = ?', [req.userId])).map(r => r.module);
 
   const geminiPrompt = `A student is using a study app. They are in these modules: ${groups.length ? [...new Set(groups)].join(', ') : 'none yet'}. They have uploaded ${stats.uploadsCount} resources, joined ${stats.groupsCount} groups, and have a ${stats.streak}-day login streak. Give exactly 3 short, specific, encouraging study recommendations as a plain list, one per line, no numbering or markdown.`;
 

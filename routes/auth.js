@@ -1,4 +1,3 @@
-// routes/auth.js
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -12,9 +11,7 @@ const router = express.Router();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 function issueToken(user) {
-  return jwt.sign({ sub: user.id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
-  });
+  return jwt.sign({ sub: user.id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
 }
 
 function publicUser(u) {
@@ -29,14 +26,8 @@ function publicUser(u) {
   };
 }
 
-// POST /api/auth/register
-// Body: { fullName, studentNumber, email, password }
 router.post('/register', async (req, res) => {
   const { fullName, studentNumber, password } = req.body;
-  // Normalise email casing/whitespace so "Test@Example.com" and
-  // "test@example.com" are always treated as the same account â€” this was
-  // the cause of "invalid email or password" on a second login with the
-  // exact same-looking credentials.
   const email = req.body.email ? req.body.email.trim().toLowerCase() : req.body.email;
 
   if (!fullName || !email || !password) {
@@ -48,29 +39,25 @@ router.post('/register', async (req, res) => {
   if (!isStrongPassword(password)) {
     return res.status(400).json({ error: PASSWORD_REQUIREMENTS_MESSAGE });
   }
-
-  const existing = db.prepare('SELECT id FROM users WHERE LOWER(email) = ?').get(email);
-  if (existing) {
+  if (await db.get('SELECT id FROM users WHERE LOWER(email) = ?', [email])) {
     return res.status(409).json({ error: 'An account with this email already exists' });
   }
+  if (studentNumber && await db.get('SELECT id FROM users WHERE student_number = ?', [studentNumber])) {
+    return res.status(409).json({ error: 'This student number is already registered' });
+  }
 
-  // Passwords are salted + hashed with bcrypt (never stored or transmitted in plain text).
   const passwordHash = await bcrypt.hash(password, 12);
   const id = uuid();
+  await db.run(
+    "INSERT INTO users (id, full_name, student_number, email, password_hash, auth_provider) VALUES (?, ?, ?, ?, ?, 'password')",
+    [id, fullName, studentNumber || null, email, passwordHash]
+  );
 
-  db.prepare(
-    `INSERT INTO users (id, full_name, student_number, email, password_hash, auth_provider)
-     VALUES (?, ?, ?, ?, ?, 'password')`
-  ).run(id, fullName, studentNumber || null, email, passwordHash);
-
-  updateLoginStreak(id);
-  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
-  const token = issueToken(user);
-  res.status(201).json({ token, user: publicUser(user) });
+  await updateLoginStreak(id);
+  const user = await db.get('SELECT * FROM users WHERE id = ?', [id]);
+  res.status(201).json({ token: issueToken(user), user: publicUser(user) });
 });
 
-// POST /api/auth/login
-// Body: { email, password }
 router.post('/login', async (req, res) => {
   const { password } = req.body;
   const email = req.body.email ? req.body.email.trim().toLowerCase() : req.body.email;
@@ -78,54 +65,50 @@ router.post('/login', async (req, res) => {
     return res.status(400).json({ error: 'email and password are required' });
   }
 
-  const user = db.prepare('SELECT * FROM users WHERE LOWER(email) = ?').get(email);
-  if (!user || !user.password_hash) {
+  const user = await db.get('SELECT * FROM users WHERE LOWER(email) = ?', [email]);
+  if (!user || !user.password_hash || !(await bcrypt.compare(password, user.password_hash))) {
     return res.status(401).json({ error: 'Invalid email or password' });
   }
 
-  const valid = await bcrypt.compare(password, user.password_hash);
-  if (!valid) {
-    return res.status(401).json({ error: 'Invalid email or password' });
-  }
-
-  updateLoginStreak(user.id);
-  const token = issueToken(user);
-  res.json({ token, user: publicUser(user) });
+  await updateLoginStreak(user.id);
+  res.json({ token: issueToken(user), user: publicUser(user) });
 });
 
-// POST /api/auth/google
-// Body: { idToken }  -- ID token obtained on-device from Google Sign-In SDK
 router.post('/google', async (req, res) => {
   const { idToken } = req.body;
   if (!idToken) return res.status(400).json({ error: 'idToken is required' });
 
+  let payload;
   try {
     const ticket = await googleClient.verifyIdToken({
       idToken,
-      audience: [(process.env.GOOGLE_CLIENT_ID || '').trim(), '639761337599-3a1ecmcp3ghnddr0be8j667v150bsvh7.apps.googleusercontent.com', '639761337599-71j4ejkpgvf3psv5i8a7gbfbkctvnbnd.apps.googleusercontent.com'].filter(Boolean),
+      audience: [
+        (process.env.GOOGLE_CLIENT_ID || '').trim(),
+        '639761337599-3a1ecmcp3ghnddr0be8j667v150bsvh7.apps.googleusercontent.com',
+        '639761337599-71j4ejkpgvf3psv5i8a7gbfbkctvnbnd.apps.googleusercontent.com',
+      ].filter(Boolean),
     });
-    const payload = ticket.getPayload();
-    const email = payload.email.trim().toLowerCase();
-    const fullName = payload.name || email.split('@')[0];
-    const picture = payload.picture;
-
-    let user = db.prepare('SELECT * FROM users WHERE LOWER(email) = ?').get(email);
-    if (!user) {
-      const id = uuid();
-      db.prepare(
-        `INSERT INTO users (id, full_name, email, auth_provider, profile_image)
-         VALUES (?, ?, ?, 'google', ?)`
-      ).run(id, fullName, email, picture || null);
-      user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
-    }
-
-    updateLoginStreak(user.id);
-    const token = issueToken(user);
-    res.json({ token, user: publicUser(user) });
+    payload = ticket.getPayload();
   } catch (err) {
     console.error('Google token verification failed:', err.message);
-    res.status(401).json({ error: 'Invalid Google ID token: ' + err.message });
+    return res.status(401).json({ error: 'Invalid Google ID token: ' + err.message });
   }
+
+  const email = payload.email.trim().toLowerCase();
+  const fullName = payload.name || email.split('@')[0];
+
+  let user = await db.get('SELECT * FROM users WHERE LOWER(email) = ?', [email]);
+  if (!user) {
+    const id = uuid();
+    await db.run(
+      "INSERT INTO users (id, full_name, email, auth_provider, profile_image) VALUES (?, ?, ?, 'google', ?)",
+      [id, fullName, email, payload.picture || null]
+    );
+    user = await db.get('SELECT * FROM users WHERE id = ?', [id]);
+  }
+
+  await updateLoginStreak(user.id);
+  res.json({ token: issueToken(user), user: publicUser(user) });
 });
 
 module.exports = router;

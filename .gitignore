@@ -7,3 +7,5 @@ db/*.sqlite-shm
 uploads/*
 !uploads/.gitkeep
 firebase-service-account.json
+
+tests/test.sqlite*
