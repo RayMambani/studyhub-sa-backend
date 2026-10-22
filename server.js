@@ -18,7 +18,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-// Permanent, git-committed sample documents â€” unlike /uploads, this folder
+// Permanent, git-committed sample documents Ã¢â‚¬â€ unlike /uploads, this folder
 // is part of the repo, so it survives every restart/redeploy on Render's
 // free tier (which does not keep a persistent disk between restarts).
 app.use('/seed-docs', express.static(path.join(__dirname, 'public', 'seed-docs')));
@@ -35,7 +35,6 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/resources', commentRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/', require('./routes/legal'));
-app.use('/api/debug', require('./routes/debug'));
 
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));
 

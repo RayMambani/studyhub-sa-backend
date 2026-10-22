@@ -18,7 +18,7 @@ const avatarStorage = multer.diskStorage({
 const uploadAvatar = multer({ storage: avatarStorage, limits: { fileSize: 8 * 1024 * 1024 } });
 
 // POST /api/users/avatar   (multipart/form-data: file)
-// Backs the "upload a profile picture" requirement — stores the image in
+// Backs the "upload a profile picture" requirement â€” stores the image in
 // /uploads and saves its URL against the user's profile_image column.
 router.post('/avatar', requireAuth, uploadAvatar.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'file is required' });
@@ -110,7 +110,7 @@ router.post('/change-password', requireAuth, async (req, res) => {
 
 // PATCH /api/users/profile
 // Body: { fullName?, studentNumber? }
-// Backs the Profile screen's Edit button — updates the student's own
+// Backs the Profile screen's Edit button â€” updates the student's own
 // display details (kept separate from /settings, which is preferences).
 router.patch('/profile', requireAuth, (req, res) => {
   const { fullName, studentNumber } = req.body;
@@ -125,6 +125,34 @@ router.patch('/profile', requireAuth, (req, res) => {
 
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId);
   res.json({ fullName: user.full_name, studentNumber: user.student_number });
+});
+
+// POST /api/users/delete-account   Body: { password? }
+// Permanently deletes the logged-in student and everything they created.
+// Password accounts must confirm with their password; Google-only accounts have no password.
+router.post('/delete-account', requireAuth, async (req, res) => {
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+
+  if (user.password_hash) {
+    const { password } = req.body;
+    if (!password) return res.status(400).json({ error: 'Enter your password to confirm deletion' });
+    const valid = await bcrypt.compare(password, user.password_hash);
+    if (!valid) return res.status(401).json({ error: 'Incorrect password' });
+  }
+
+  const wipe = db.transaction((id) => {
+    db.prepare('DELETE FROM comments WHERE resource_id IN (SELECT id FROM resources WHERE uploader_id = ?)').run(id);
+    db.prepare('DELETE FROM resources WHERE uploader_id = ?').run(id);
+    db.prepare('DELETE FROM notes WHERE user_id = ?').run(id);
+    db.prepare('DELETE FROM events WHERE user_id = ?').run(id);
+    db.prepare('DELETE FROM notifications WHERE user_id = ?').run(id);
+    db.prepare('DELETE FROM group_members WHERE user_id = ?').run(id);
+    db.prepare('DELETE FROM messages WHERE sender_id = ?').run(id);
+    db.prepare('DELETE FROM users WHERE id = ?').run(id);
+  });
+  wipe(req.userId);
+  res.json({ deleted: true });
 });
 
 module.exports = router;

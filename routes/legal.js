@@ -43,4 +43,16 @@ router.get('/terms', (req, res) => {
     <p><a href="/home">Back to home</a></p>`));
 });
 
+router.get('/delete-account', (req, res) => {
+  res.send(page('Delete your account', `
+    <h1>Delete your StudyHub SA account</h1>
+    <h3>Inside the app</h3>
+    <p>Open StudyHub SA, go to Profile, then Settings, and tap <b>Delete account</b>. Confirm with your password (leave it blank if you signed in with Google). Your account is deleted immediately.</p>
+    <h3>Without the app</h3>
+    <p>Email makhadzimambani71@gmail.com from the address you registered with and we will delete your account and data within 30 days.</p>
+    <h3>What is deleted</h3>
+    <p>Your profile, student number, email, profile picture, uploaded resources and their comments, group memberships, group messages you sent, calendar events, notifications and notes.</p>
+    <p><a href="/privacy">Privacy Policy</a></p>`));
+});
+
 module.exports = router;
